@@ -65,6 +65,7 @@
       overflow: hidden;
       min-width: 280px;
       max-width: 400px;
+      transition: transform 0.2s ease;
     }
 
     .set.frozen .set-header {
@@ -141,38 +142,34 @@
       "Wujek Mateusz B": ["Ciocia Marta", "Piotr", "Paweł", "Hanna", "Wujek Mateusz B"]
     };
 
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-
+    // Lekki deterministyczny generator (bez pętli losowej)
     function generateSet(existingPairs = []) {
       const giversList = [];
       givers.forEach(g => {
         for (let i = 0; i < g.count; i++) giversList.push(g.name);
       });
 
-      while (true) {
-        const pool = participants.slice();
-        shuffle(pool);
-        const pairs = [];
-        let ok = true;
-        for (let i = 0; i < giversList.length; i++) {
-          const giver = giversList[i];
-          const receiver = pool[i];
-          if (
-            (forbidden[giver] && forbidden[giver].includes(receiver)) ||
-            existingPairs.some(p => p.giver === giver && p.receiver === receiver)
-          ) {
-            ok = false;
-            break;
-          }
-          pairs.push({ giver, receiver });
+      const availableReceivers = [...participants];
+      const pairs = [];
+
+      giversList.forEach(giver => {
+        const allowed = availableReceivers.filter(r =>
+          !(forbidden[giver] || []).includes(r) &&
+          !existingPairs.some(p => p.giver === giver && p.receiver === r)
+        );
+
+        if (allowed.length === 0) {
+          pairs.push({ giver, receiver: "— brak dopasowania —" });
+          return;
         }
-        if (ok) return pairs;
-      }
+
+        // wybieramy pierwszego dostępnego (szybko, bez losowania)
+        const receiver = allowed[0];
+        pairs.push({ giver, receiver });
+        availableReceivers.splice(availableReceivers.indexOf(receiver), 1);
+      });
+
+      return pairs;
     }
 
     function renderSet(pairs, index) {
@@ -190,7 +187,7 @@
       lockBtn.style.background = "#ff7a00";
       lockBtn.style.fontSize = "0.9rem";
       lockBtn.onclick = (e) => {
-        e.stopPropagation(); // nie blokuje całej strony
+        e.stopPropagation();
         if (setDiv.dataset.frozen === "true") {
           setDiv.dataset.frozen = "false";
           setDiv.classList.remove("frozen");
