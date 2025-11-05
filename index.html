@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Losowanie prezentów</title>
+  <title>Losowanie prezentów rodzinnych</title>
   <style>
     body {
       font-family: "Segoe UI", Roboto, sans-serif;
@@ -98,7 +98,7 @@
 </head>
 <body>
   <h1>Losowanie prezentów rodzinnych</h1>
-  <button id="drawBtn">Wylosuj nowy zestaw</button>
+  <button id="drawBtn">Losuj</button>
   <div id="sets"></div>
 
   <script>
@@ -126,7 +126,7 @@
       "Wujek Mateusz B": ["Ciocia Marta", "Piotr", "Paweł", "Hanna", "Wujek Mateusz B"]
     };
 
-    // Funkcja do tasowania (Fisher–Yates)
+    // Funkcja do tasowania
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -166,24 +166,32 @@
     function renderSet(pairs, index) {
       const setDiv = document.createElement("div");
       setDiv.className = "set";
+      setDiv.dataset.frozen = "false";
 
       const header = document.createElement("div");
       header.className = "set-header";
       const title = document.createElement("span");
       title.textContent = `Zestaw ${index + 1}`;
 
-      const freezeBtn = document.createElement("button");
-      freezeBtn.textContent = "Zamroź";
-      freezeBtn.style.background = "#ff7a00";
-      freezeBtn.style.fontSize = "0.9rem";
-      freezeBtn.onclick = () => {
-        freezeBtn.disabled = true;
-        freezeBtn.textContent = "Zamrożony";
-        setDiv.dataset.frozen = "true";
+      const lockBtn = document.createElement("button");
+      lockBtn.textContent = "Zablokuj";
+      lockBtn.style.background = "#ff7a00";
+      lockBtn.style.fontSize = "0.9rem";
+      lockBtn.onclick = () => {
+        if (setDiv.dataset.frozen === "true") {
+          setDiv.dataset.frozen = "false";
+          lockBtn.textContent = "Zablokuj";
+          lockBtn.style.background = "#ff7a00";
+        } else {
+          setDiv.dataset.frozen = "true";
+          lockBtn.textContent = "Odblokuj";
+          lockBtn.style.background = "#555";
+        }
+        checkIfAllFrozen();
       };
 
       header.appendChild(title);
-      header.appendChild(freezeBtn);
+      header.appendChild(lockBtn);
 
       const table = document.createElement("table");
       table.innerHTML = "<tr><th>Losujący</th><th>Obdarowany</th></tr>";
@@ -203,25 +211,45 @@
     const drawBtn = document.getElementById("drawBtn");
     let allSets = [];
 
-    drawBtn.onclick = () => {
-      const frozenSets = Array.from(document.querySelectorAll(".set"))
-        .filter(s => s.dataset.frozen === "true");
-      if (frozenSets.length === 3) {
-        alert("Wszystkie 3 zestawy są już zamrożone.");
-        return;
-      }
+    // Funkcja generująca lub aktualizująca zestawy
+    function drawSets() {
+      allSets.forEach((pairs, i) => {
+        const setDiv = setsContainer.children[i];
+        if (setDiv.dataset.frozen === "false") {
+          const existingPairs = allSets.flat();
+          const newSet = generateSet(existingPairs);
+          allSets[i] = newSet;
+          const newDiv = renderSet(newSet, i);
+          setsContainer.replaceChild(newDiv, setDiv);
+        }
+      });
+      checkIfAllFrozen();
+    }
 
-      if (allSets.length >= 3) {
-        alert("Masz już 3 zestawy. Zamroź lub odśwież stronę, aby zacząć od nowa.");
-        return;
-      }
+    // Sprawdź, czy wszystkie zestawy są zamrożone
+    function checkIfAllFrozen() {
+      const frozen = Array.from(document.querySelectorAll(".set"))
+        .every(s => s.dataset.frozen === "true");
+      drawBtn.disabled = frozen;
+    }
 
-      const existingPairs = allSets.flat();
-      const newSet = generateSet(existingPairs);
-      allSets.push(newSet);
-      const setDiv = renderSet(newSet, allSets.length - 1);
-      setsContainer.appendChild(setDiv);
-    };
+    // Pierwsze losowanie — od razu 3 zestawy
+    function initialDraw() {
+      setsContainer.innerHTML = "";
+      allSets = [];
+      for (let i = 0; i < 3; i++) {
+        const newSet = generateSet(allSets.flat());
+        allSets.push(newSet);
+        const setDiv = renderSet(newSet, i);
+        setsContainer.appendChild(setDiv);
+      }
+    }
+
+    // Obsługa przycisku "Losuj"
+    drawBtn.onclick = drawSets;
+
+    // Uruchom pierwsze losowanie po załadowaniu strony
+    initialDraw();
   </script>
 </body>
 </html>
