@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Losowanie prezentów 🎁</title>
+  <title>Losowanie prezentów</title>
   <style>
     body {
       font-family: "Segoe UI", Roboto, sans-serif;
@@ -97,7 +97,7 @@
   </style>
 </head>
 <body>
-  <h1>🎄 Losowanie prezentów rodzinnych 🎁</h1>
+  <h1>Losowanie prezentów rodzinnych</h1>
   <button id="drawBtn">Wylosuj nowy zestaw</button>
   <div id="sets"></div>
 
@@ -169,25 +169,21 @@
 
       const header = document.createElement("div");
       header.className = "set-header";
-      header.innerHTML = `Zestaw ${index + 1}`;
+      const title = document.createElement("span");
+      title.textContent = `Zestaw ${index + 1}`;
+
       const freezeBtn = document.createElement("button");
       freezeBtn.textContent = "Zamroź";
       freezeBtn.style.background = "#ff7a00";
       freezeBtn.style.fontSize = "0.9rem";
       freezeBtn.onclick = () => {
         freezeBtn.disabled = true;
-        freezeBtn.textContent = "Zamrożony 🔒";
+        freezeBtn.textContent = "Zamrożony";
         setDiv.dataset.frozen = "true";
       };
 
-      const headerWrap = document.createElement("div");
-      headerWrap.style.display = "flex";
-      headerWrap.style.justifyContent = "space-between";
-      headerWrap.style.alignItems = "center";
-      headerWrap.appendChild(document.createTextNode(`Zestaw ${index + 1}`));
-      headerWrap.appendChild(freezeBtn);
-      header.innerHTML = "";
-      header.appendChild(headerWrap);
+      header.appendChild(title);
+      header.appendChild(freezeBtn);
 
       const table = document.createElement("table");
       table.innerHTML = "<tr><th>Losujący</th><th>Obdarowany</th></tr>";
@@ -211,7 +207,7 @@
       const frozenSets = Array.from(document.querySelectorAll(".set"))
         .filter(s => s.dataset.frozen === "true");
       if (frozenSets.length === 3) {
-        alert("Wszystkie 3 zestawy są już zamrożone!");
+        alert("Wszystkie 3 zestawy są już zamrożone.");
         return;
       }
 
