@@ -1,21 +1,108 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <title>Losowanie prezentów świątecznych</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Losowanie prezentów 🎁</title>
   <style>
-    table { border-collapse: collapse; margin-top: 10px; }
-    td, th { border: 1px solid #444; padding: 5px 10px; text-align: left; }
-    th { background: #ddd; }
+    body {
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #e6f0ff, #f9f9ff);
+      color: #222;
+      margin: 0;
+      padding: 0 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      color: #004aad;
+      margin-top: 25px;
+      font-size: 1.7rem;
+    }
+
+    button {
+      background: #004aad;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-size: 1rem;
+      margin-top: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    button:hover:not(:disabled) {
+      background: #005be0;
+      transform: scale(1.03);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .set {
+      width: 95%;
+      max-width: 650px;
+      margin-top: 25px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .set-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background: #004aad;
+      color: white;
+      font-weight: bold;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e9f0ff;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8faff;
+    }
+
+    tr:hover {
+      background-color: #dfe9ff;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.4rem; }
+      button { width: 90%; }
+      .set { font-size: 0.95rem; }
+    }
   </style>
 </head>
 <body>
-  <h1>Losowanie prezentów świątecznych</h1>
-  <button id="drawBtn">Wylosuj zestaw</button>
-  <div id="result"></div>
+  <h1>🎄 Losowanie prezentów rodzinnych 🎁</h1>
+  <button id="drawBtn">Wylosuj nowy zestaw</button>
+  <div id="sets"></div>
 
   <script>
-    // Definicja uczestników i ograniczeń
+    // Dane uczestników i ograniczenia
     const givers = [
       { name: "Dziadek", count: 1 },
       { name: "Babcia", count: 2 },
@@ -24,12 +111,12 @@
       { name: "Ciocia Marta", count: 2 },
       { name: "Wujek Mateusz B", count: 2 }
     ];
-    // Lista wszystkich uczestników (możliwi obdarowani)
+
     const participants = [
-      "Dziadek","Babcia","Ciocia Magda","Wujek Mateusz Sz.",
-      "Ciocia Marta","Wujek Mateusz B","Piotr","Paweł","Hanna","Agatka","Jacek"
+      "Dziadek", "Babcia", "Ciocia Magda", "Wujek Mateusz Sz.",
+      "Ciocia Marta", "Wujek Mateusz B", "Piotr", "Paweł", "Hanna", "Agatka", "Jacek"
     ];
-    // Ograniczenia: kto nie może kogo wylosować
+
     const forbidden = {
       "Dziadek": ["Babcia", "Dziadek"],
       "Babcia": ["Dziadek", "Babcia"],
@@ -39,70 +126,105 @@
       "Wujek Mateusz B": ["Ciocia Marta", "Piotr", "Paweł", "Hanna", "Wujek Mateusz B"]
     };
 
-    // Algorytm Fisher-Yates do przetasowania tablicy (losowe permutacje)5
+    // Funkcja do tasowania (Fisher–Yates)
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1)); // losowy indeks od 0 do i
-        [array[i], array[j]] = [array[j], array[i]];   // zamiana miejscami
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
     }
 
-    // Funkcja wywoływana po kliknięciu przycisku
-    document.getElementById("drawBtn").onclick = function() {
-      // Przygotowanie listy losujących (powtórzone nazwy według count)
-      let giversList = [];
+    // Generowanie jednego zestawu
+    function generateSet(existingPairs = []) {
+      const giversList = [];
       givers.forEach(g => {
-        for (let i = 0; i < g.count; i++) {
-          giversList.push(g.name);
-        }
+        for (let i = 0; i < g.count; i++) giversList.push(g.name);
       });
-      let resultList;
-      // Powtarzamy losowanie dopóki warunki nie będą spełnione
+
       while (true) {
-        // Przypisujemy kopię listy uczestników do losowania
-        let pool = participants.slice();
-        shuffle(pool); // losowe przetasowanie tablicy uczestników
-        // Tworzymy przypisanie (lista [losujący, obdarowany])
+        const pool = participants.slice();
+        shuffle(pool);
+        const pairs = [];
         let ok = true;
-        let pairs = [];
         for (let i = 0; i < giversList.length; i++) {
-          let giver = giversList[i];
-          let receiver = pool[i];
-          // Sprawdzamy ograniczenia
-          if (forbidden[giver] && forbidden[giver].includes(receiver)) {
-            ok = false; // zabronione skojarzenie
+          const giver = giversList[i];
+          const receiver = pool[i];
+          if (
+            (forbidden[giver] && forbidden[giver].includes(receiver)) ||
+            existingPairs.some(p => p.giver === giver && p.receiver === receiver)
+          ) {
+            ok = false;
             break;
           }
-          pairs.push({ giver: giver, receiver: receiver });
+          pairs.push({ giver, receiver });
         }
-        if (ok) {
-          resultList = pairs;
-          break; // znaleziono poprawny zestaw
-        }
-        // inaczej powtarzamy losowanie
+        if (ok) return pairs;
+      }
+    }
+
+    // Renderowanie zestawu
+    function renderSet(pairs, index) {
+      const setDiv = document.createElement("div");
+      setDiv.className = "set";
+
+      const header = document.createElement("div");
+      header.className = "set-header";
+      header.innerHTML = `Zestaw ${index + 1}`;
+      const freezeBtn = document.createElement("button");
+      freezeBtn.textContent = "Zamroź";
+      freezeBtn.style.background = "#ff7a00";
+      freezeBtn.style.fontSize = "0.9rem";
+      freezeBtn.onclick = () => {
+        freezeBtn.disabled = true;
+        freezeBtn.textContent = "Zamrożony 🔒";
+        setDiv.dataset.frozen = "true";
+      };
+
+      const headerWrap = document.createElement("div");
+      headerWrap.style.display = "flex";
+      headerWrap.style.justifyContent = "space-between";
+      headerWrap.style.alignItems = "center";
+      headerWrap.appendChild(document.createTextNode(`Zestaw ${index + 1}`));
+      headerWrap.appendChild(freezeBtn);
+      header.innerHTML = "";
+      header.appendChild(headerWrap);
+
+      const table = document.createElement("table");
+      table.innerHTML = "<tr><th>Losujący</th><th>Obdarowany</th></tr>";
+      pairs.forEach(p => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${p.giver}</td><td>${p.receiver}</td>`;
+        table.appendChild(row);
+      });
+
+      setDiv.appendChild(header);
+      setDiv.appendChild(table);
+      return setDiv;
+    }
+
+    // Główna logika
+    const setsContainer = document.getElementById("sets");
+    const drawBtn = document.getElementById("drawBtn");
+    let allSets = [];
+
+    drawBtn.onclick = () => {
+      const frozenSets = Array.from(document.querySelectorAll(".set"))
+        .filter(s => s.dataset.frozen === "true");
+      if (frozenSets.length === 3) {
+        alert("Wszystkie 3 zestawy są już zamrożone!");
+        return;
       }
 
-      // Budowa tabeli z wynikiem
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = ""; // czyścimy poprzedni wynik
-      const table = document.createElement("table");
-      // Nagłówek tabeli
-      const header = table.insertRow();
-      let th1 = document.createElement("th");
-      th1.textContent = "Losujący";
-      header.appendChild(th1);
-      let th2 = document.createElement("th");
-      th2.textContent = "Obdarowany";
-      header.appendChild(th2);
-      // Wiersze z parą Losujący → Obdarowany
-      resultList.forEach(pair => {
-        const row = table.insertRow();
-        const cell1 = row.insertCell();
-        cell1.textContent = pair.giver;
-        const cell2 = row.insertCell();
-        cell2.textContent = pair.receiver;
-      });
-      resultDiv.appendChild(table);
+      if (allSets.length >= 3) {
+        alert("Masz już 3 zestawy. Zamroź lub odśwież stronę, aby zacząć od nowa.");
+        return;
+      }
+
+      const existingPairs = allSets.flat();
+      const newSet = generateSet(existingPairs);
+      allSets.push(newSet);
+      const setDiv = renderSet(newSet, allSets.length - 1);
+      setsContainer.appendChild(setDiv);
     };
   </script>
 </body>
