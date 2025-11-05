@@ -10,7 +10,7 @@
       background: linear-gradient(135deg, #e6f0ff, #f9f9ff);
       color: #222;
       margin: 0;
-      padding: 0 10px;
+      padding: 0 10px 40px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -21,7 +21,7 @@
       text-align: center;
       color: #004aad;
       margin-top: 25px;
-      font-size: 1.7rem;
+      font-size: 1.6rem;
     }
 
     button {
@@ -29,9 +29,9 @@
       color: white;
       border: none;
       border-radius: 12px;
-      padding: 14px 24px;
+      padding: 12px 22px;
       font-size: 1rem;
-      margin-top: 15px;
+      margin: 10px;
       cursor: pointer;
       transition: all 0.2s ease;
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
@@ -47,14 +47,28 @@
       cursor: not-allowed;
     }
 
+    .sets-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      width: 100%;
+      max-width: 1300px;
+      margin-top: 20px;
+    }
+
     .set {
-      width: 95%;
-      max-width: 650px;
-      margin-top: 25px;
+      flex: 1 1 300px;
       background: white;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       overflow: hidden;
+      min-width: 280px;
+      max-width: 400px;
+    }
+
+    .set.frozen .set-header {
+      background: #666;
     }
 
     .set-header {
@@ -73,7 +87,7 @@
     }
 
     th, td {
-      padding: 10px;
+      padding: 8px;
       text-align: left;
     }
 
@@ -89,20 +103,21 @@
       background-color: #dfe9ff;
     }
 
-    @media (max-width: 600px) {
-      h1 { font-size: 1.4rem; }
-      button { width: 90%; }
-      .set { font-size: 0.95rem; }
+    @media (max-width: 800px) {
+      .sets-container {
+        flex-direction: column;
+        align-items: center;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Losowanie prezentów rodzinnych</h1>
   <button id="drawBtn">Losuj</button>
-  <div id="sets"></div>
+
+  <div id="setsContainer" class="sets-container"></div>
 
   <script>
-    // Dane uczestników i ograniczenia
     const givers = [
       { name: "Dziadek", count: 1 },
       { name: "Babcia", count: 2 },
@@ -126,7 +141,6 @@
       "Wujek Mateusz B": ["Ciocia Marta", "Piotr", "Paweł", "Hanna", "Wujek Mateusz B"]
     };
 
-    // Funkcja do tasowania
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -134,7 +148,6 @@
       }
     }
 
-    // Generowanie jednego zestawu
     function generateSet(existingPairs = []) {
       const giversList = [];
       givers.forEach(g => {
@@ -162,7 +175,6 @@
       }
     }
 
-    // Renderowanie zestawu
     function renderSet(pairs, index) {
       const setDiv = document.createElement("div");
       setDiv.className = "set";
@@ -177,15 +189,18 @@
       lockBtn.textContent = "Zablokuj";
       lockBtn.style.background = "#ff7a00";
       lockBtn.style.fontSize = "0.9rem";
-      lockBtn.onclick = () => {
+      lockBtn.onclick = (e) => {
+        e.stopPropagation(); // nie blokuje całej strony
         if (setDiv.dataset.frozen === "true") {
           setDiv.dataset.frozen = "false";
+          setDiv.classList.remove("frozen");
           lockBtn.textContent = "Zablokuj";
           lockBtn.style.background = "#ff7a00";
         } else {
           setDiv.dataset.frozen = "true";
+          setDiv.classList.add("frozen");
           lockBtn.textContent = "Odblokuj";
-          lockBtn.style.background = "#555";
+          lockBtn.style.background = "#666";
         }
         checkIfAllFrozen();
       };
@@ -206,12 +221,10 @@
       return setDiv;
     }
 
-    // Główna logika
-    const setsContainer = document.getElementById("sets");
+    const setsContainer = document.getElementById("setsContainer");
     const drawBtn = document.getElementById("drawBtn");
     let allSets = [];
 
-    // Funkcja generująca lub aktualizująca zestawy
     function drawSets() {
       allSets.forEach((pairs, i) => {
         const setDiv = setsContainer.children[i];
@@ -226,14 +239,12 @@
       checkIfAllFrozen();
     }
 
-    // Sprawdź, czy wszystkie zestawy są zamrożone
     function checkIfAllFrozen() {
       const frozen = Array.from(document.querySelectorAll(".set"))
         .every(s => s.dataset.frozen === "true");
       drawBtn.disabled = frozen;
     }
 
-    // Pierwsze losowanie — od razu 3 zestawy
     function initialDraw() {
       setsContainer.innerHTML = "";
       allSets = [];
@@ -245,10 +256,7 @@
       }
     }
 
-    // Obsługa przycisku "Losuj"
     drawBtn.onclick = drawSets;
-
-    // Uruchom pierwsze losowanie po załadowaniu strony
     initialDraw();
   </script>
 </body>
